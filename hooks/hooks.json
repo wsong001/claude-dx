@@ -1,0 +1,28 @@
+{
+  "description": "Claude DX hooks for Feishu notifications",
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/entry_points/notification_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/entry_points/stop_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
