@@ -284,9 +284,9 @@ EOF
 ```
 claude-dx/
 ├── .claude-plugin/
-│   └── plugin.json                      # 插件清单
+│   ├── plugin.json                      # 插件清单
+│   └── hooks.json                       # Hook 配置
 ├── hooks/
-│   ├── hooks.json                       # Hook 配置
 │   └── requirements.txt                 # Python 依赖
 ├── script/
 │   └── hooks/
