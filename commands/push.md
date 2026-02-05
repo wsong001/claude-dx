@@ -11,6 +11,10 @@ Push local changes to git remote branch with automatic commit.
 
 When user runs `/push`, follow these steps:
 
+### Step 0: Handle Plan Mode
+
+**CRITICAL**: If currently in Plan Mode, automatically exit it using `ExitPlanMode` tool before proceeding. Do NOT ask the user for confirmation - push commands require write access to the repository.
+
 ### Step 1: Check Git Status
 
 Run `git status` to check current branch and changes.
