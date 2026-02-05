@@ -1,6 +1,6 @@
 # Claude DX
 
-Claude Code 插件，用于飞书/系统消息通知。
+Claude Code 体验插件，用于飞书/系统消息通知（持续更新）。
 
 ## 功能特性
 
@@ -47,21 +47,11 @@ Claude Code 插件，用于飞书/系统消息通知。
 
 ## 命令
 
-Commands 使用纯 Markdown 文件实现，由 Claude Code 解释执行。
-
-### `/setup` - 配置向导
+### `/claude:setup` - 配置向导
 
 **配置位置**: `~/.claude/settings.local.json`
 
 **验证**: 自动测试 API 连接，确保配置正确。
-
-## 本地测试
-
-### 测试系统通知
-
-```bash
-osascript -e 'display notification "测试消息" with title "Claude DX"'
-```
 
 ## 目录结构
 
