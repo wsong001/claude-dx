@@ -1,5 +1,4 @@
 ---
-name: setup
 description: Configure Claude DX plugin for notifications
 ---
 

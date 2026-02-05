@@ -1,5 +1,4 @@
 ---
-name: push
 description: Push local changes to git remote branch
 ---
 
