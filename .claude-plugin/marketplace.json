@@ -1,0 +1,32 @@
+{
+  "name": "my-marketplace",
+  "version": "1.0.0",
+  "metadata": {
+    "description": "Battle-tested Claude Code configurations from an Anker Developer"
+  },
+  "description": "Claude DX",
+  "owner": {
+    "name": "Will J Song",
+    "email": "will.j.song@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "claude-dx",
+      "description": "Claude体验增强插件",
+      "source": "./",
+      "category": "workflow",
+      "author": {
+        "name": "Will J Song"
+      },
+      "keywords": [
+        "hooks",
+        "commands"
+      ],
+      "tags": [
+        "commands",
+        "hooks"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}
