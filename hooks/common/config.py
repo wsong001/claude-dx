@@ -8,8 +8,19 @@ from typing import Optional
 class Config:
     """配置管理类 - 应用机器人模式."""
 
+    # 通知类型常量
+    NOTIFICATION_TYPE_SYSTEM = "system"
+    NOTIFICATION_TYPE_FEISHU = "feishu"
+
     def __init__(self):
         """初始化配置."""
+        # 通知类型配置（system 或 feishu）
+        self.notification_type = self._load_config(
+            "NOTIFICATION_TYPE",
+            "notificationType",
+            default=self.NOTIFICATION_TYPE_SYSTEM  # 默认使用系统通知
+        )
+
         # 飞书应用机器人配置
         self.app_id = self._load_config("FEISHU_APP_ID", "feishuAppId")
         self.app_secret = self._load_config("FEISHU_APP_SECRET", "feishuAppSecret")
@@ -169,11 +180,34 @@ class Config:
         Returns:
             bool: 配置是否有效
         """
+        # 如果是系统通知，无需验证飞书配置
+        if self.notification_type == self.NOTIFICATION_TYPE_SYSTEM:
+            return True
+
+        # 如果是飞书通知，验证飞书配置
         required = [self.app_id, self.app_secret, self.receive_id]
         return (
             all(required) and
             self.receive_id_type in ["open_id", "chat_id", "user_id", "email"]
         )
+
+    def is_system_notification(self) -> bool:
+        """
+        检查是否使用系统通知.
+
+        Returns:
+            bool: 是否使用系统通知
+        """
+        return self.notification_type == self.NOTIFICATION_TYPE_SYSTEM
+
+    def is_feishu_notification(self) -> bool:
+        """
+        检查是否使用飞书通知.
+
+        Returns:
+            bool: 是否使用飞书通知
+        """
+        return self.notification_type == self.NOTIFICATION_TYPE_FEISHU
 
 
 # 全局配置实例

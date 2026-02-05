@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from common.config import config
 from common.logger import logger
 from common.feishu_bot import FeishuAppBot
+from common.system_notifier import send_notification
 
 
 class BaseHandler(ABC):
@@ -31,8 +32,12 @@ class BaseHandler(ABC):
         self.logger = logger
         self.bot: Optional[FeishuAppBot] = None
 
-        # 初始化飞书应用机器人
-        if self.config.validate():
+        # 根据通知类型初始化
+        if self.config.is_system_notification():
+            # 系统通知模式
+            self.logger.info("Using system notification mode")
+        elif self.config.validate():
+            # 飞书通知模式
             self.bot = FeishuAppBot(
                 app_id=self.config.app_id,
                 app_secret=self.config.app_secret,
@@ -40,8 +45,9 @@ class BaseHandler(ABC):
                 receive_id_type=self.config.receive_id_type,
                 cache_file=self.config.token_cache_file
             )
+            self.logger.info("Using Feishu notification mode")
         else:
-            self.logger.warning("Feishu app bot not configured, notifications disabled")
+            self.logger.warning("Notification not configured, notifications disabled")
 
     def process(self, input_data: Dict[str, Any]) -> None:
         """
@@ -56,9 +62,8 @@ class BaseHandler(ABC):
                 self.logger.error("Invalid input data")
                 return
 
-            # 发送飞书通知
-            if self.bot:
-                self.send_notification(input_data)
+            # 根据通知类型发送通知
+            self.send_notification(input_data)
 
         except Exception as e:
             # 捕获所有异常,确保不影响Hook执行
@@ -80,12 +85,29 @@ class BaseHandler(ABC):
     @abstractmethod
     def send_notification(self, input_data: Dict[str, Any]) -> None:
         """
-        发送飞书通知.
+        发送通知.
 
         Args:
             input_data: 输入数据
         """
         pass
+
+    def send_system_notification(self, title: str, message: str) -> bool:
+        """
+        发送系统通知.
+
+        Args:
+            title: 通知标题
+            message: 通知内容
+
+        Returns:
+            bool: 是否发送成功
+        """
+        try:
+            return send_notification(title, message)
+        except Exception as e:
+            self.logger.error(f"System notification error: {e}")
+            return False
 
     def filter_sensitive_info(self, text: str, max_length: Optional[int] = None) -> str:
         """

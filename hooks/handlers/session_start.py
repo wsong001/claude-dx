@@ -13,6 +13,26 @@ class SessionStartHandler(BaseHandler):
 
     def send_notification(self, input_data: Dict[str, Any]) -> None:
         """发送会话开始通知."""
+        # 根据通知模式选择发送方式
+        if self.config.is_system_notification():
+            self._send_system_notification()
+        elif self.bot:
+            self._send_feishu_notification(input_data)
+
+    def _send_system_notification(self) -> None:
+        """发送系统通知."""
+        title = "🚀 Claude Code"
+        content = "会话已启动"
+
+        success = self.send_system_notification(title, content)
+
+        if success:
+            self.logger.info("System SessionStart notification sent")
+        else:
+            self.logger.warning("Failed to send system SessionStart notification")
+
+    def _send_feishu_notification(self, input_data: Dict[str, Any]) -> None:
+        """发送飞书通知."""
         session_id = self.get_session_id(input_data)
         timestamp = input_data.get("timestamp", "N/A")
 
@@ -70,6 +90,6 @@ class SessionStartHandler(BaseHandler):
         )
 
         if success:
-            self.logger.info(f"SessionStart notification sent for session {session_id}")
+            self.logger.info(f"Feishu SessionStart notification sent for session {session_id}")
         else:
-            self.logger.warning(f"Failed to send SessionStart notification for session {session_id}")
+            self.logger.warning(f"Failed to send Feishu SessionStart notification for session {session_id}")

@@ -34,6 +34,36 @@ class StopHandler(BaseHandler):
             icon = "✅"
             status = "正常完成"
 
+        # 根据通知模式选择发送方式
+        if self.config.is_system_notification():
+            self._send_system_notification(icon, status, reason)
+        elif self.bot:
+            self._send_feishu_notification(input_data, session_id, icon, status, reason, timestamp, stop_type, color)
+
+    def _send_system_notification(self, icon: str, status: str, reason: str) -> None:
+        """发送系统通知."""
+        title = f"{icon} Claude Code"
+        content = f"会话已结束 - {status}"
+
+        success = self.send_system_notification(title, content)
+
+        if success:
+            self.logger.info("System stop notification sent")
+        else:
+            self.logger.warning("Failed to send system stop notification")
+
+    def _send_feishu_notification(
+        self,
+        input_data: Dict[str, Any],
+        session_id: str,
+        icon: str,
+        status: str,
+        reason: str,
+        timestamp: str,
+        stop_type: str,
+        color: str
+    ) -> None:
+        """发送飞书通知."""
         # 构建消息内容
         content = f"{icon} Claude 已完成响应\n📊 状态: {status}"
 
@@ -95,6 +125,6 @@ class StopHandler(BaseHandler):
         )
 
         if success:
-            self.logger.info(f"Stop notification sent for session {session_id}")
+            self.logger.info(f"Feishu Stop notification sent for session {session_id}")
         else:
-            self.logger.warning(f"Failed to send Stop notification for session {session_id}")
+            self.logger.warning(f"Failed to send Feishu Stop notification for session {session_id}")

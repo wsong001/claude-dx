@@ -11,14 +11,44 @@ class NotificationHandler(BaseHandler):
         return "notification_type" in input_data
 
     def send_notification(self, input_data: Dict[str, Any]) -> None:
-        """发送通知通知."""
+        """发送通知."""
         notification_type = input_data.get("notification_type", "unknown")
-        session_id = self.get_session_id(input_data)
         timestamp = input_data.get("timestamp", "N/A")
         message = input_data.get("message", "")
 
-        # 根据通知类型设置颜色和标题
+        # 根据通知类型获取图标和描述
         type_config = self._get_type_config(notification_type)
+
+        # 根据通知模式选择发送方式
+        if self.config.is_system_notification():
+            self._send_system_notification(notification_type, type_config, message)
+        elif self.bot:
+            self._send_feishu_notification(input_data, notification_type, type_config, message, timestamp)
+
+    def _send_system_notification(self, notification_type: str, type_config: Dict[str, str], message: str) -> None:
+        """发送系统通知."""
+        title = f"{type_config['icon']} {type_config['title']}"
+        content = type_config['description']
+        if message:
+            content += f"\n{message}"
+
+        success = self.send_system_notification(title, content)
+
+        if success:
+            self.logger.info(f"System notification sent for type {notification_type}")
+        else:
+            self.logger.warning(f"Failed to send system notification for type {notification_type}")
+
+    def _send_feishu_notification(
+        self,
+        input_data: Dict[str, Any],
+        notification_type: str,
+        type_config: Dict[str, str],
+        message: str,
+        timestamp: str
+    ) -> None:
+        """发送飞书通知."""
+        session_id = self.get_session_id(input_data)
 
         # 构建消息内容
         content = f"{type_config['icon']} {type_config['description']}"
@@ -63,9 +93,9 @@ class NotificationHandler(BaseHandler):
         )
 
         if success:
-            self.logger.info(f"Notification sent for type {notification_type}")
+            self.logger.info(f"Feishu notification sent for type {notification_type}")
         else:
-            self.logger.warning(f"Failed to send Notification for type {notification_type}")
+            self.logger.warning(f"Failed to send Feishu notification for type {notification_type}")
 
     def _get_type_config(self, notification_type: str) -> Dict[str, str]:
         """
