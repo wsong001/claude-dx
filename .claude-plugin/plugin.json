@@ -10,5 +10,5 @@
   "repository": "https://github.com/wsong001/claude-dx",
   "license": "MIT",
   "keywords": ["claude-code", "hooks", "commands", "feishu", "notifications"],
-  "commands": ["setup"]
+  "skills": ["./commands/"]
 }

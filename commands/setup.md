@@ -1,4 +1,5 @@
 ---
+name: setup
 description: Configure Claude DX plugin for notifications
 ---
 
@@ -8,11 +9,9 @@ Interactive setup wizard for configuring Claude DX notifications.
 
 ## Instructions
 
-When user runs `/Setup`, follow these steps:
+When user runs `/setup`, follow these steps:
 
-### Step 1: Welcome Message
-
-Display a friendly welcome message:
+### Step 1: 欢迎消息
 
 ```
 ╔════════════════════════════════════════════════════════════╗
@@ -20,8 +19,9 @@ Display a friendly welcome message:
 ║  Version 0.3.0                                             ║
 ╚════════════════════════════════════════════════════════════╝
 
-欢迎使用 Claude DX 配置向导！
-本向导将帮助你配置消息通知功能。
+🎯 Claude DX 配置向导
+
+配置通知方式，让 Claude 及时通知你。
 ```
 
 ### Step 2: 选择通知方式
@@ -29,111 +29,118 @@ Display a friendly welcome message:
 Use the AskUserQuestion tool to ask the user which notification method they prefer:
 
 **Header**: "通知方式"
-**Question**: "请选择消息通知方式："
+**Question**: "选择通知方式："
 **Options**:
-1. "飞书应用机器人" - 需要配置飞书应用（推荐用于远程通知）
-2. "系统通知" - macOS 右上角通知（无需配置，本地使用）
+1. "飞书应用机器人消息通知" - 适合远程通知和团队协作
+2. "系统消息通知" - 适合本地使用，无需配置 [推荐]
 
 **Logic Based on User Choice**:
 
 | 用户选择 | 后续操作 |
 |----------|----------|
-| 飞书应用机器人 | 执行 Step 3-7（收集 App ID、Secret 等） |
-| 系统通知 | 跳到 Step 8（直接保存配置，跳过飞书配置） |
+| 飞书应用机器人消息通知 | 执行 Step 3（收集飞书配置） |
+| 系统消息通知 | 跳到 Step 4（直接保存配置） |
 
-### Step 3: Collect Feishu Configuration (Only if Feishu selected)
+### Step 3: 收集飞书配置（仅选择飞书时执行）
 
-If user selected "飞书应用机器人", use the AskUserQuestion tool to collect the following information:
+If user selected "飞书应用机器人消息通知", follow these sub-steps:
 
-#### Question 1: Feishu App ID
-- **Header**: "App ID"
-- **Question**: "请输入飞书应用的 App ID（从飞书开发者后台获取）"
-- **Validation**: Must start with `cli_` and be 20 characters total (e.g., `cli_1234567890abcdef`)
-- **Hint**: "在飞书开发者后台 → 凭证与基础信息 → App ID"
+#### Step 3.0: 检查 Python 环境
 
-#### Question 2: Feishu App Secret
-- **Header**: "App Secret"
-- **Question**: "请输入飞书应用的 App Secret（应用密钥）"
-- **Validation**: Minimum 32 characters
-- **Hint**: "在飞书开发者后台 → 凭证与基础信息 → App Secret（点击查看）"
+飞书通知需要 Python 和 requests 库。自动检查并安装：
 
-#### Question 3: Notification Target
-- **Header**: "通知目标"
-- **Question**: "选择通知发送到哪里？"
-- **Options**:
-  1. "个人账号" - 需要用户的 open_id
-  2. "飞书群" - 需要群聊的 chat_id
+1. **检查 Python**：运行 `python3 --version`
+2. **检查 requests**：运行 `python3 -c "import requests; print(requests.__version__)"`
 
-#### Question 4: Receiver ID
-- **Header**: "接收者ID"
-- **Question**: Based on previous answer:
-  - If "个人账号": "请输入用户的 open_id（格式：ou_xxxxxxxxxxxxxx）"
-  - If "飞书群": "请输入群聊的 chat_id（格式：oc_xxxxxxxxxxxxxx）"
-- **Validation**:
-  - open_id: Must start with `ou_`
-  - chat_id: Must start with `oc_`
+**如果缺少依赖，自动安装**：
+- 如果 Python 未安装：提示用户安装 Python（macOS: `brew install python3`）
+- 如果 requests 未安装：运行 `pip3 install requests`
 
-### Step 4: Build Configuration Object
-
-Construct the configuration object based on user selection:
-
-**If Feishu selected:**
-```json
-{
-  "notificationType": "feishu",
-  "feishuAppId": "<collected_app_id>",
-  "feishuAppSecret": "<collected_app_secret>",
-  "feishuReceiveId": "<collected_receiver_id>",
-  "feishuReceiveIdType": "<open_id or chat_id based on selection>"
-}
+**显示进度消息**：
+```
+🔍 正在检查 Python 环境...
 ```
 
-**If System selected:**
-```json
-{
-  "notificationType": "system"
-}
+检查完成后，显示结果：
+```
+✅ Python 环境检查完成
+  Python: <version>
+  requests: <version>
 ```
 
-### Step 5: Validate Configuration (Optional for Feishu)
+#### Step 3.1: 选择接收者类型
 
-If user selected Feishu, optionally test the API connection by:
-1. Making a POST request to `https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal`
-2. Payload: `{"app_id": "<app_id>", "app_secret": "<app_secret>"}`
-3. Check if response code is 0 (success)
+**Header**: "飞书应用机器人App Id和App Secret"
+**Question**: "收集飞书应用机器人App Id和App Secret"
+**Options**:
+1. "App Id" - 请访问飞书开放平台后台查看App Id
+2. "App Secret" - 请访问飞书开放平台后台查看App Secret
 
-If validation fails, warn the user but continue with saving.
+**Header**: "接收者"
+**Question**: "通知发送给谁？"
+**Options**:
+1. "我自己" - 需要 open_id
+2. "群聊" - 需要 chat_id
 
-### Step 6: Save Configuration
+**提示格式示例**：
 
-1. **Read existing config** (if exists): `~/.claude/settings.local.json`
-2. **Deep merge**: Merge new config into existing config (preserve other keys)
-3. **Write config**: Save to `~/.claude/settings.local.json`
-4. **Set permissions**: Run `chmod 600 ~/.claude/settings.local.json`
+```
+请输入飞书应用的 App ID：
 
-**Deep Merge Logic**:
-- Preserve all existing keys in the config file
-- Only update/add the notification-related keys
-- Example: If config has `{"otherKey": "value"}`, result should be `{"otherKey": "value", "notificationType": "...", ...}`
+格式示例：cli_1234567890abcdef
+获取方式：飞书开发者后台 → 凭证与基础信息 → App ID
+```
 
-### Step 7: Display Completion Message
+Wait for user input, then:
 
-Show success message with plugin statistics:
+```
+请输入飞书应用的 App Secret：
+
+格式示例：32位以上的字母数字组合
+获取方式：飞书开发者后台 → 凭证与基础信息 → App Secret（点击查看）
+```
+
+Wait for user input, then:
+
+```
+请输入接收者 ID：
+
+- 如果是"我自己"：输入 open_id（格式：ou_xxxxxxxxxxxxxx）
+- 如果是"群聊"：输入 chat_id（格式：oc_xxxxxxxxxxxxxx）
+
+获取方式：
+  - open_id：通过飞书开放平台 API 获取用户信息
+  - chat_id：在飞书群聊设置中查看群 ID
+```
+
+**Validation**:
+- App ID: Must start with `cli_` and be 20+ characters
+- App Secret: Minimum 32 characters
+- open_id: Must start with `ou_`
+- chat_id: Must start with `oc_`
+
+### Step 4: 保存配置
+
+1. **读取现有配置**（如果存在）：`~/.claude/settings.local.json`
+2. **深度合并**：将新配置合并到现有配置中（保留其他键）
+3. **写入配置**：保存到 `~/.claude/settings.local.json`
+4. **设置权限**：运行 `chmod 600 ~/.claude/settings.local.json`
+
+**深度合并逻辑**：
+- 保留配置文件中的所有现有键
+- 仅更新/添加通知相关的键
+- 示例：如果配置有 `{"otherKey": "value"}`，结果应为 `{"otherKey": "value", "notificationType": "...", ...}`
+
+### Step 5: 显示完成消息
 
 ```
 ╔════════════════════════════════════════════════════════════╗
 ║  ✅ 配置完成！                                             ║
 ╚════════════════════════════════════════════════════════════╝
 
-📊 当前组件统计:
-  - Agents: 0
-  - Commands: 1 (/Setup)
-  - Hooks: 5
-  - Skills: 0
-
 🎯 下一步:
-  1. Claude Code 将自动使用新配置
-  2. 开始对话，将自动收到通知
+  - Claude Code 将自动使用新配置
+  - 开始对话，将自动收到通知
 
 配置文件位置: ~/.claude/settings.local.json
 

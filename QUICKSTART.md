@@ -42,13 +42,13 @@
 
 ### 步骤2: 配置应用机器人 (2分钟)
 
-#### 方式A: 使用 `/Setup` 命令（推荐）
+#### 方式A: 使用 `/setup` 命令（推荐）
 
 ```bash
 cd /Users/admin/Documents/GitHub/claude-dx
 claude --plugin-dir ./
 # 在 Claude Code 中运行
-/Setup
+/setup
 ```
 
 按向导提示输入配置信息，向导会自动保存到 `~/.claude/settings.local.json`。
