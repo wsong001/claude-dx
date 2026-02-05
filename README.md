@@ -48,7 +48,7 @@ cd claude-dx
 ### 2. 安装 Python 依赖
 
 ```bash
-cd script/hooks
+cd hooks
 pip3 install -r requirements.txt
 ```
 
@@ -206,7 +206,7 @@ Commands 使用纯 Markdown 文件实现，由 Claude Code 解释执行。
 ### 测试1: Python 依赖验证
 
 ```bash
-cd script/hooks
+cd hooks
 python3 -c "import requests; print('✓ requests installed')"
 ```
 
@@ -218,7 +218,7 @@ echo '{"notificationType":"system"}' > ~/.claude/settings.local.json
 
 # 测试 SessionStart hook
 echo '{"session_id":"test-123","timestamp":"2024-02-05T12:00:00Z","cwd":"/tmp"}' | \
-  python3 script/hooks/session_start.py
+  python3 ../script/hooks/session_start.py
 ```
 
 预期结果：右上角弹出系统通知
@@ -228,7 +228,7 @@ echo '{"session_id":"test-123","timestamp":"2024-02-05T12:00:00Z","cwd":"/tmp"}'
 ```bash
 python3 << 'EOF'
 import sys
-sys.path.insert(0, "script/hooks")
+sys.path.insert(0, "../script/hooks")
 from common.config import config
 
 print(f"Notification Type: {config.notification_type}")
@@ -246,7 +246,7 @@ EOF
 ```bash
 python3 << 'EOF'
 import sys
-sys.path.insert(0, "script/hooks")
+sys.path.insert(0, "../script/hooks")
 from common.config import config
 from common.feishu_bot import FeishuAppBot
 
@@ -285,7 +285,9 @@ EOF
 claude-dx/
 ├── .claude-plugin/
 │   └── plugin.json                      # 插件清单
-├── hooks.json                           # Hook 配置
+├── hooks/
+│   ├── hooks.json                       # Hook 配置
+│   └── requirements.txt                 # Python 依赖
 ├── script/
 │   └── hooks/
 │       ├── common/                      # 共享模块
@@ -299,8 +301,7 @@ claude-dx/
 │       ├── permission_request.py       # PermissionRequest Hook
 │       ├── notification.py             # Notification Hook
 │       ├── stop.py                     # Stop Hook
-│       ├── subagent_stop.py            # SubagentStop Hook
-│       └── requirements.txt            # Python 依赖
+│       └── subagent_stop.py            # SubagentStop Hook
 ├── commands/
 │   ├── setup.md                         # /setup 命令
 │   └── push.md                          # /push 命令
@@ -318,7 +319,7 @@ claude-dx/
    ```bash
    python3 -c "
    import sys
-   sys.path.insert(0, 'script/hooks')
+   sys.path.insert(0, '../script/hooks')
    from common.config import config
    print(f'Notification Type: {config.notification_type}')
    print(f'Valid: {config.validate()}')
@@ -339,7 +340,7 @@ claude-dx/
    ```bash
    python3 << 'EOF'
    import sys
-   sys.path.insert(0, "script/hooks")
+   sys.path.insert(0, "../script/hooks")
    from common.feishu_bot import FeishuTokenManager
    from common.config import config
    from pathlib import Path
@@ -364,7 +365,7 @@ claude-dx/
 
 **原因:** 网络慢或飞书 API 响应慢
 
-**解决方案:** 增加超时时间，修改项目根目录的 `hooks.json`：
+**解决方案:** 增加超时时间，修改 `hooks/hooks.json` 中的 `timeout` 值：
 
 ```json
 {
