@@ -26,26 +26,28 @@ Show:
 - Modified files
 - Untracked files (if any)
 
-### Step 2: Get Commit Message
+### Step 2: Auto-Generate Commit Message
 
-Ask user for commit message using plain text prompt:
+Automatically analyze git diff to generate an intelligent commit message.
 
+**Analysis Process**:
+
+1. Run `git diff --cached --stat` to see changed files
+2. Run `git diff --cached` to see actual changes
+3. Categorize changes based on:
+   - **feat**: New files/functions, feature additions
+   - **fix**: Keywords like fix/bug/修复/solve
+   - **docs**: .md/.txt documentation files
+   - **test**: Test files or test-related changes
+   - **chore**: Config files, dependencies, package updates
+   - **refactor**: Code restructuring without behavior change
+
+4. Generate concise commit message in format: `<type>: <description>`
+
+**Display to user**:
 ```
-请输入提交消息（留空使用默认消息）：
-
-默认格式：feat: <description>
-
-示例：
-  - feat: 添加用户认证功能
-  - fix: 修复登录问题
-  - docs: 更新 README
-```
-
-Wait for user input.
-
-**If user leaves empty**: Use auto-generated commit message:
-```
-chore: 自动提交 [YYYY-MM-DD HH:MM:SS]
+📝 自动生成的提交消息：
+<generated_commit_message>
 ```
 
 ### Step 3: Execute Git Operations
