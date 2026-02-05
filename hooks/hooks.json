@@ -1,6 +1,17 @@
 {
-  "description": "Claude DX hooks for Feishu notifications",
+  "description": "Claude DX hooks for system/Feishu notifications",
   "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/script/hooks/permission_request.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "matcher": "*",

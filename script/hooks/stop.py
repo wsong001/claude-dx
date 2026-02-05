@@ -1,154 +1,77 @@
 #!/usr/bin/env python3
-"""Stop Hook - Claude 完成响应时触发."""
+"""Stop hook 脚本 - 会话结束通知."""
 import json
-import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
 
-# 添加common目录到Python路径
-sys.path.insert(0, str(Path(__file__).parent / "common"))
-
-from common.config import config
-from common.logger import logger
-from common.feishu_bot import FeishuAppBot
-from common.system_notifier import send_notification
-
-
-class StopHandler:
-    """停止处理器."""
-
-    SENSITIVE_PATTERNS = [
-        r"api[_-]?key", r"secret", r"password", r"token",
-        r"auth", r"credential", r"private[_-]?key",
-    ]
-
-    def __init__(self):
-        self.config = config
-        self.logger = logger
-        self.bot: Optional[FeishuAppBot] = None
-
-        if self.config.is_system_notification():
-            self.logger.info("Using system notification mode")
-        elif self.config.validate():
-            self.bot = FeishuAppBot(
-                app_id=self.config.app_id,
-                app_secret=self.config.app_secret,
-                receive_id=self.config.receive_id,
-                receive_id_type=self.config.receive_id_type,
-                cache_file=self.config.token_cache_file
-            )
-            self.logger.info("Using Feishu notification mode")
-        else:
-            self.logger.warning("Notification not configured, notifications disabled")
-
-    def validate_input(self, input_data: Dict[str, Any]) -> bool:
-        return "session_id" in input_data or "sessionId" in input_data
-
-    def process(self, input_data: Dict[str, Any]) -> None:
-        try:
-            if not self.validate_input(input_data):
-                self.logger.error("Invalid input data")
-                return
-            self.send_notification(input_data)
-        except Exception as e:
-            self.logger.error(f"Handler error: {e}", exc_info=e)
-
-    def send_notification(self, input_data: Dict[str, Any]) -> None:
-        session_id = self.get_session_id(input_data)
-        timestamp = input_data.get("timestamp", "N/A")
-        reason = input_data.get("reason", "completed")
-        stop_type = input_data.get("stop_type", "normal")
-
-        if stop_type == "error":
-            color = "red"
-            icon = "❌"
-            status = "异常停止"
-        elif stop_type == "interrupted":
-            color = "yellow"
-            icon = "⏸️"
-            status = "用户中断"
-        else:
-            color = "green"
-            icon = "✅"
-            status = "正常完成"
-
-        if self.config.is_system_notification():
-            self._send_system_notification(icon, status)
-        elif self.bot:
-            self._send_feishu_notification(input_data, session_id, icon, status, reason, timestamp, stop_type, color)
-
-    def _send_system_notification(self, icon: str, status: str) -> None:
-        title = f"{icon} Claude Code"
-        content = f"会话已结束 - {status}"
-        success = send_notification(title, content)
-        if success:
-            self.logger.info("System stop notification sent")
-        else:
-            self.logger.warning("Failed to send system stop notification")
-
-    def _send_feishu_notification(self, input_data, session_id, icon, status, reason, timestamp, stop_type, color) -> None:
-        content = f"{icon} Claude 已完成响应\n📊 状态: {status}"
-
-        fields = [
-            {"name": "会话ID", "value": f"`{session_id}`", "icon": "🎯"},
-            {"name": "停止原因", "value": reason, "icon": "💡", "highlight": stop_type == "error"},
-            {"name": "完成时间", "value": timestamp, "icon": "⏰"},
-        ]
-
-        if "stats" in input_data:
-            stats = input_data["stats"]
-            stats_lines = []
-            if "turns" in stats:
-                stats_lines.append(f"🔄 回合数: **{stats['turns']}**")
-            if "tokens" in stats:
-                stats_lines.append(f"🎫 Tokens: **{stats['tokens']}**")
-            if "duration" in stats:
-                duration_sec = stats['duration'] / 1000
-                stats_lines.append(f"⏱️ 耗时: **{duration_sec:.1f}s**")
-            if stats_lines:
-                fields.append({"name": "统计信息", "value": "\n".join(stats_lines), "icon": "📈"})
-
-        if input_data.get("error"):
-            error_msg = self.filter_sensitive_info(str(input_data["error"]), 200)
-            fields.append({"name": "错误信息", "value": f"```\n{error_msg}\n```", "icon": "⚠️", "highlight": True})
-
-        success = self.bot.send_card_message(
-            title="🏁 会话停止 | Stop",
-            content=content,
-            color=color,
-            fields=fields
-        )
-
-        if success:
-            self.logger.info(f"Feishu Stop notification sent for session {session_id}")
-        else:
-            self.logger.warning(f"Failed to send Feishu Stop notification for session {session_id}")
-
-    def filter_sensitive_info(self, text: str, max_length: Optional[int] = None) -> str:
-        if not text:
-            return ""
-        text = str(text)
-        for pattern in self.SENSITIVE_PATTERNS:
-            text = re.sub(rf'(["\']?{pattern}["\']?\s*[:=]\s*)([^,\s\]}}]+)', r'\1***', text, flags=re.IGNORECASE)
-        if max_length and len(text) > max_length:
-            text = text[:max_length] + "..."
-        return text
-
-    def get_session_id(self, input_data: Dict[str, Any]) -> str:
-        session_id = input_data.get("session_id") or input_data.get("sessionId", "unknown")
-        if len(session_id) > 8:
-            return session_id[:8]
-        return session_id
+sys.path.insert(0, str(Path(__file__).parent))
+from lib import (
+    config, logger, FeishuAppBot,
+    send_system_notification, get_session_id
+)
 
 
 def main():
+    """主函数."""
     try:
+        # 从 stdin 读取输入
         input_data = json.load(sys.stdin)
-        handler = StopHandler()
-        handler.process(input_data)
+
+        # 提取数据
+        stop_reason = input_data.get("stop_reason", "Unknown")
+        session_id = get_session_id(input_data)
+        timestamp = input_data.get("timestamp", "N/A")
+
+        # 格式化停止原因
+        reason_map = {
+            "user_requested": "用户主动结束",
+            "error": "发生错误",
+            "timeout": "超时",
+            "interrupted": "被中断",
+            "completed": "正常完成",
+        }
+        reason_text = reason_map.get(stop_reason, stop_reason)
+
+        if config.is_system_notification():
+            # 系统通知
+            content = f"会话结束: {reason_text}"
+            send_system_notification(title="🔚 Claude Code", message=content)
+            logger.info(f"System notification sent for Stop: {reason_text}")
+
+        elif config.validate():
+            # 飞书通知
+            content = f"**会话结束**\n\n原因: {reason_text}"
+
+            fields = [
+                {"name": "会话ID", "value": f"`{session_id}`", "icon": "🎯"},
+                {"name": "结束原因", "value": reason_text, "icon": "🔚"},
+                {"name": "结束时间", "value": timestamp, "icon": "⏰"},
+            ]
+
+            bot = FeishuAppBot(
+                app_id=config.app_id,
+                app_secret=config.app_secret,
+                receive_id=config.receive_id,
+                receive_id_type=config.receive_id_type,
+                cache_file=config.token_cache_file
+            )
+
+            success = bot.send_card_message(
+                title="🔚 会话结束",
+                content=content,
+                color="gray",
+                fields=fields
+            )
+
+            if success:
+                logger.info(f"Feishu notification sent for Stop: {reason_text}")
+            else:
+                logger.warning(f"Failed to send Feishu notification for Stop: {reason_text}")
+
+        # 输出原始数据
         json.dump(input_data, sys.stdout)
         sys.stdout.flush()
+
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON input: {e}")
         print("{}", flush=True)

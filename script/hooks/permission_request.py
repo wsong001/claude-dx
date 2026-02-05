@@ -1,121 +1,85 @@
 #!/usr/bin/env python3
-"""PermissionRequest Hook - 权限请求时触发."""
+"""PermissionRequest hook 脚本 - 权限请求通知."""
 import json
-import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
 
-# 添加common目录到Python路径
-sys.path.insert(0, str(Path(__file__).parent / "common"))
-
-from common.config import config
-from common.logger import logger
-from common.feishu_bot import FeishuAppBot
-
-
-class PermissionRequestHandler:
-    """权限请求处理器."""
-
-    SENSITIVE_PATTERNS = [
-        r"api[_-]?key", r"secret", r"password", r"token",
-        r"auth", r"credential", r"private[_-]?key",
-    ]
-
-    def __init__(self):
-        self.config = config
-        self.logger = logger
-        self.bot: Optional[FeishuAppBot] = None
-
-        if self.config.is_system_notification():
-            self.logger.info("Using system notification mode")
-        elif self.config.validate():
-            self.bot = FeishuAppBot(
-                app_id=self.config.app_id,
-                app_secret=self.config.app_secret,
-                receive_id=self.config.receive_id,
-                receive_id_type=self.config.receive_id_type,
-                cache_file=self.config.token_cache_file
-            )
-            self.logger.info("Using Feishu notification mode")
-        else:
-            self.logger.warning("Notification not configured, notifications disabled")
-
-    def validate_input(self, input_data: Dict[str, Any]) -> bool:
-        return "permission_type" in input_data or "tool_name" in input_data
-
-    def process(self, input_data: Dict[str, Any]) -> None:
-        try:
-            if not self.validate_input(input_data):
-                self.logger.error("Invalid input data")
-                return
-            self.send_notification(input_data)
-        except Exception as e:
-            self.logger.error(f"Handler error: {e}", exc_info=e)
-
-    def send_notification(self, input_data: Dict[str, Any]) -> None:
-        if self.config.is_system_notification():
-            return
-
-        permission_type = input_data.get("permission_type", "unknown")
-        tool_name = input_data.get("tool_name", "Unknown")
-        resource = input_data.get("resource", "")
-        session_id = self.get_session_id(input_data)
-        timestamp = input_data.get("timestamp", "N/A")
-
-        content = f"🔐 需要用户审批\n\n**权限类型**: `{permission_type}`\n**工具名称**: `{tool_name}`\n**会话ID**: `{session_id}`"
-
-        fields = []
-
-        if resource:
-            resource_summary = self.filter_sensitive_info(resource, 200)
-            fields.append({"name": "请求资源", "value": f"`{resource_summary}`"})
-
-        if "action" in input_data:
-            fields.append({"name": "请求操作", "value": input_data["action"]})
-
-        if "description" in input_data:
-            fields.append({"name": "说明", "value": input_data["description"]})
-
-        fields.append({"name": "请求时间", "value": timestamp})
-        fields.append({"name": "⚠️ 注意", "value": "请在Claude Code中审批此权限请求"})
-
-        success = self.bot.send_card_message(
-            title="🔒 权限请求 | Permission Request",
-            content=content,
-            color="yellow",
-            fields=fields
-        )
-
-        if success:
-            self.logger.info(f"PermissionRequest notification sent for {permission_type}")
-        else:
-            self.logger.warning(f"Failed to send PermissionRequest notification for {permission_type}")
-
-    def filter_sensitive_info(self, text: str, max_length: Optional[int] = None) -> str:
-        if not text:
-            return ""
-        text = str(text)
-        for pattern in self.SENSITIVE_PATTERNS:
-            text = re.sub(rf'(["\']?{pattern}["\']?\s*[:=]\s*)([^,\s\]}}]+)', r'\1***', text, flags=re.IGNORECASE)
-        if max_length and len(text) > max_length:
-            text = text[:max_length] + "..."
-        return text
-
-    def get_session_id(self, input_data: Dict[str, Any]) -> str:
-        session_id = input_data.get("session_id") or input_data.get("sessionId", "unknown")
-        if len(session_id) > 8:
-            return session_id[:8]
-        return session_id
+sys.path.insert(0, str(Path(__file__).parent))
+from lib import (
+    config, logger, FeishuAppBot,
+    send_system_notification, get_session_id, filter_sensitive_info
+)
 
 
 def main():
+    """主函数."""
     try:
+        # 从 stdin 读取输入
         input_data = json.load(sys.stdin)
-        handler = PermissionRequestHandler()
-        handler.process(input_data)
+
+        # 验证输入
+        if "permission_type" not in input_data:
+            logger.error("Invalid input: missing permission_type")
+            json.dump(input_data, sys.stdout)
+            sys.stdout.flush()
+            return
+
+        # 提取数据
+        permission_type = input_data.get("permission_type", "Unknown")
+        permission_data = input_data.get("permission_data", {})
+        session_id = get_session_id(input_data)
+        timestamp = input_data.get("timestamp", "N/A")
+
+        # 构建权限描述
+        permission_desc = _format_permission_description(permission_type, permission_data)
+
+        if config.is_system_notification():
+            # 系统通知
+            content = f"权限请求: {permission_type}"
+            send_system_notification(title="🔐 Claude Code", message=content)
+            logger.info(f"System notification sent for PermissionRequest: {permission_type}")
+
+        elif config.validate():
+            # 飞书通知
+            content = f"🔐 权限请求: **{permission_type}**"
+
+            fields = [
+                {"name": "会话ID", "value": f"`{session_id}`", "icon": "🎯"},
+                {"name": "权限类型", "value": permission_desc, "icon": "🔑"},
+                {"name": "请求时间", "value": timestamp, "icon": "⏰"},
+            ]
+
+            if "operation" in permission_data:
+                fields.append({
+                    "name": "操作",
+                    "value": f"`{permission_data['operation']}`",
+                    "icon": "⚡"
+                })
+
+            bot = FeishuAppBot(
+                app_id=config.app_id,
+                app_secret=config.app_secret,
+                receive_id=config.receive_id,
+                receive_id_type=config.receive_id_type,
+                cache_file=config.token_cache_file
+            )
+
+            success = bot.send_card_message(
+                title="🔐 权限请求 | Permission Request",
+                content=content,
+                color="yellow",
+                fields=fields
+            )
+
+            if success:
+                logger.info(f"Feishu notification sent for PermissionRequest: {permission_type}")
+            else:
+                logger.warning(f"Failed to send Feishu notification for PermissionRequest: {permission_type}")
+
+        # 输出原始数据
         json.dump(input_data, sys.stdout)
         sys.stdout.flush()
+
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON input: {e}")
         print("{}", flush=True)
@@ -129,6 +93,25 @@ def main():
             print("{}", flush=True)
     finally:
         sys.exit(0)
+
+
+def _format_permission_description(permission_type: str, permission_data: dict) -> str:
+    """格式化权限描述."""
+    descriptions = {
+        "dangerouslyDisableSandbox": "禁用沙箱模式",
+        "autoApprove": "自动批准权限",
+        "bypassConfirmation": "跳过确认",
+        "executeCommand": "执行命令",
+        "writeFile": "写入文件",
+        "networkAccess": "网络访问",
+    }
+
+    desc = descriptions.get(permission_type, permission_type)
+
+    if "reason" in permission_data:
+        desc += f"\n原因: {permission_data['reason']}"
+
+    return desc
 
 
 if __name__ == "__main__":

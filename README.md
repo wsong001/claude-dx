@@ -48,8 +48,7 @@ cd claude-dx
 ### 2. 安装 Python 依赖
 
 ```bash
-cd hooks
-pip3 install -r requirements.txt
+pip3 install requests
 ```
 
 ### 3. 配置应用机器人
@@ -206,7 +205,6 @@ Commands 使用纯 Markdown 文件实现，由 Claude Code 解释执行。
 ### 测试1: Python 依赖验证
 
 ```bash
-cd hooks
 python3 -c "import requests; print('✓ requests installed')"
 ```
 
@@ -218,7 +216,7 @@ echo '{"notificationType":"system"}' > ~/.claude/settings.local.json
 
 # 测试 SessionStart hook
 echo '{"session_id":"test-123","timestamp":"2024-02-05T12:00:00Z","cwd":"/tmp"}' | \
-  python3 ../script/hooks/session_start.py
+  python3 ../script/hooks/hook_runner.py session_start
 ```
 
 预期结果：右上角弹出系统通知
@@ -287,7 +285,7 @@ claude-dx/
 │   ├── plugin.json                      # 插件清单
 │   └── hooks.json                       # Hook 配置
 ├── hooks/
-│   └── requirements.txt                 # Python 依赖
+│   └── hooks.json                       # Hook 配置
 ├── script/
 │   └── hooks/
 │       ├── common/                      # 共享模块
@@ -295,13 +293,17 @@ claude-dx/
 │       │   ├── logger.py                # 日志工具
 │       │   ├── system_notifier.py      # 系统通知模块
 │       │   └── feishu_bot.py           # 飞书 API 封装
-│       ├── session_start.py            # SessionStart Hook
-│       ├── pre_tool_use.py             # PreToolUse Hook
-│       ├── post_tool_use.py            # PostToolUse Hook
-│       ├── permission_request.py       # PermissionRequest Hook
-│       ├── notification.py             # Notification Hook
-│       ├── stop.py                     # Stop Hook
-│       └── subagent_stop.py            # SubagentStop Hook
+│       ├── handlers/                    # Hook 处理器
+│       │   ├── base.py                 # 抽象基类
+│       │   ├── session.py              # SessionStart/Stop
+│       │   ├── tool.py                 # PreToolUse/PostToolUse
+│       │   ├── permission.py           # PermissionRequest
+│       │   ├── notification.py         # Notification
+│       │   └── subagent.py             # SubagentStop
+│       ├── utils/                       # 工具函数
+│       │   ├── filters.py              # 敏感信息过滤
+│       │   └── formatters.py           # 数据格式化
+│       └── hook_runner.py              # 统一入口点
 ├── commands/
 │   ├── setup.md                         # /setup 命令
 │   └── push.md                          # /push 命令
@@ -369,16 +371,15 @@ claude-dx/
 
 ```json
 {
-  "description": "Claude DX hooks for Feishu notifications",
+  "description": "Claude DX hooks for system/Feishu notifications",
   "hooks": {
-    "Notification": [
+    "SessionStart": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/script/hooks/notification.py",
-            "timeout": 30
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/script/hooks/hook_runner.py session_start",
+            "timeout": 10
           }
         ]
       }
@@ -388,8 +389,8 @@ claude-dx/
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/script/hooks/stop.py",
-            "timeout": 30
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/script/hooks/hook_runner.py stop",
+            "timeout": 10
           }
         ]
       }
