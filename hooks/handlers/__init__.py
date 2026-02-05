@@ -1,1 +1,0 @@
-"""Claude DX hook handlers."""

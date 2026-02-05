@@ -1,1 +1,0 @@
-"""Claude DX hooks package."""

@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/entry_points/notification_hook.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/script/hooks/notification.py",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/entry_points/stop_hook.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/script/hooks/stop.py",
             "timeout": 10
           }
         ]
