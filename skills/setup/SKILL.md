@@ -1,34 +1,34 @@
 ---
 name: setup
-description: Configure Claude DX plugin for notifications
+description: Claude DX 配置向导 — 配置飞书通知凭证和通知方式
 ---
 
-# Setup - Claude DX Configuration Wizard
+# Setup - Claude DX 配置向导
 
-Interactive setup wizard for configuring Claude DX notifications.
+交互式配置向导，用于配置 Claude DX 通知。
 
-## Instructions
+## 使用说明
 
-When user runs `/setup`, follow these steps **in order**. Each step includes branching logic — follow the path that matches the user's situation.
+当用户运行 `/setup` 时，按以下步骤**依次执行**。每个步骤包含分支逻辑 — 按用户的实际情况选择对应路径。
 
-### Step 1: Welcome
+### 第一步：欢迎
 
-Display:
+显示：
 
 ```
 ===========================================================
   Claude DX 配置向导 / Setup Wizard
-  Version 0.3.0
+  Version 1.0.0
 ===========================================================
 
 配置通知方式，让 Claude 在任务完成时及时通知你。
 ```
 
-### Step 2: Detect Existing Configuration
+### 第二步：检测现有配置
 
-**Action**: Read `~/.claude/settings.local.json` using the Read tool. Check for the presence of notification keys: `notificationType`, `feishuAppId`, `feishuAppSecret`, `feishuReceiveId`, `feishuReceiveIdType`.
+**操作**：使用 Read 工具读取 `~/.claude/settings.local.json`，检查是否存在通知相关字段：`notificationType`、`feishuAppId`、`feishuAppSecret`、`feishuReceiveId`、`feishuReceiveIdType`。
 
-**If config exists**, display a summary (mask App Secret — show first 4 + `****` + last 4 characters):
+**如果配置已存在**，显示摘要（App Secret 脱敏 — 显示前4位 + `****` + 后4位）：
 
 ```
 检测到已有配置：
@@ -40,7 +40,7 @@ Display:
   接收者 ID  : ou_xxxxxxxxxxxx
 ```
 
-Then ask the user to choose:
+然后让用户选择：
 
 ```
 请选择操作：
@@ -50,104 +50,77 @@ Then ask the user to choose:
 3. 测试现有配置
 ```
 
-- User selects **1** → Go to **Step 3**
-- User selects **2** → Go to **Step 2b**
-- User selects **3** → Go to **Step 6**
+- 用户选择 **1** → 跳转到**第三步**
+- 用户选择 **2** → 跳转到**第二步b**
+- 用户选择 **3** → 跳转到**第五步**
 
-**If no config exists**, display:
+**如果配置不存在**，显示：
 
 ```
 未检测到通知配置，将引导你完成首次配置。
 ```
 
-Then proceed to **Step 3**.
+然后进入**第三步**。
 
-### Step 2b: Modify Specific Fields
+### 第二步b：修改特定字段
 
-Present all editable fields with current values:
+展示所有可编辑字段及当前值：
 
 ```
 请选择要修改的字段（输入编号，多个用逗号分隔）：
 
-1. 通知类型 (当前: feishu)
-2. App ID (当前: cli_xxxx...)
-3. App Secret (当前: ****...****)
-4. 接收者类型 (当前: open_id)
-5. 接收者 ID (当前: ou_xxxx...)
+1. App ID (当前: cli_xxxx...)
+2. App Secret (当前: ****...****)
+3. 接收者类型 (当前: open_id)
+4. 接收者 ID (当前: ou_xxxx...)
 ```
 
-For each selected field, jump to the corresponding collection sub-step:
-- 1 → Step 3 (notification type selection only, then skip to Step 5)
-- 2 → Step 4a
-- 3 → Step 4b
-- 4 → Step 4c
-- 5 → Step 4d
+根据用户选择的字段，跳转到对应的收集子步骤：
+- 1 → 第四步a
+- 2 → 第四步b
+- 3 → 第四步c
+- 4 → 第四步d
 
-Unselected fields retain their current values from the existing config. After collecting all selected fields, jump to **Step 5**.
+未选择的字段保留现有配置中的当前值。收集完所有选择的字段后，跳转到**第四步**。
 
-### Step 3: Notification Type Selection
-
-```
-通知类型
-
-你希望通过什么方式接收通知？
-
-1. 飞书 (Feishu) — 通过飞书应用机器人发送卡片消息
-2. 系统通知 (System) — 使用 macOS 原生通知
-```
-
-**If user selects "系统通知"**:
-- Set `notificationType` to `"system"`
-- Display warning:
-
-```
-注意：系统通知功能正在开发中。配置将被保存，但通知暂时不会生效。
-```
-
-- Skip Steps 3a and 4, jump to **Step 5**
-
-**If user selects "飞书"**:
-- Set `notificationType` to `"feishu"`
-- Proceed to **Step 3a**
-
-### Step 3a: Python Environment Check (Feishu Only)
+### 第三步：Python 环境检查
 
 ```
 检查 Python 环境...
 ```
 
-1. Run `python3 --version`
-2. Run `python3 -c "import requests; print(requests.__version__)"`
+1. 运行 `python3 --version`
+2. 运行 `python3 -c "import requests; print(requests.__version__)"`
 
-**Both OK**:
+**均通过**：
 ```
 Python 环境检查完成
   Python   : <version> ... OK
   requests : <version> ... OK
 ```
 
-Proceed to **Step 4**.
+进入**第四步**。设置 `notificationType` 为 `"feishu"`。
 
-**Python missing**:
+**Python 未安装**：
 ```
 Python 3 未安装。飞书通知需要 Python 3。
 安装方式：brew install python3 (macOS)
 ```
 
-Ask user whether to continue or cancel.
+询问用户是否继续或取消。
 
-**requests missing**:
+**requests 未安装**：
 ```
 requests 库未安装。是否自动安装？(y/n)
 ```
 
-If yes, run `pip3 install requests` and verify. If no, warn that notifications won't work but continue.
+如果是，运行 `pip3 install requests` 并验证。如果否，提示通知功能将不可用但继续。
 
-### Step 4: Collect Feishu Credentials
+### 第四步：收集飞书凭证
 
-Each sub-step shows a progress indicator. After each input, briefly confirm what was collected.
+每个子步骤显示进度指示器。每次输入后，简要确认已收集的内容。
 
-#### Step 4a: App ID
+#### 第四步a：App ID
 
 ```
 [Step 1/4] 飞书应用 App ID
@@ -159,14 +132,14 @@ Each sub-step shows a progress indicator. After each input, briefly confirm what
   获取方式 : 飞书开发者后台 → 凭证与基础信息 → App ID
 ```
 
-**Validation**: Must match `^cli_[a-zA-Z0-9]{16}$`
+**校验规则**：必须匹配 `^cli_[a-zA-Z0-9]{16}$`
 
-On failure:
+校验失败时：
 ```
 格式错误。App ID 应为 cli_ 开头加 16 位字母数字。请重新输入：
 ```
 
-#### Step 4b: App Secret
+#### 第四步b：App Secret
 
 ```
 [Step 2/4] 飞书应用 App Secret
@@ -177,9 +150,9 @@ On failure:
   获取方式 : 飞书开发者后台 → 凭证与基础信息 → App Secret（点击查看）
 ```
 
-**Validation**: Minimum 32 characters.
+**校验规则**：最少 32 个字符。
 
-#### Step 4c: Receive ID Type
+#### 第四步c：接收者类型
 
 ```
 [Step 3/4] 通知接收者类型
@@ -190,11 +163,11 @@ On failure:
 2. 群聊   — 需要 chat_id
 ```
 
-#### Step 4d: Receive ID
+#### 第四步d：接收者 ID
 
-Based on Step 4c selection:
+根据第四步c的选择：
 
-**open_id**:
+**open_id**：
 ```
 [Step 4/4] 接收者 Open ID
 
@@ -205,9 +178,9 @@ Based on Step 4c selection:
   获取方式 : 通过飞书开放平台 API 获取用户信息
 ```
 
-**Validation**: Must match `^ou_[a-zA-Z0-9]+$`
+**校验规则**：必须匹配 `^ou_[a-zA-Z0-9]+$`
 
-**chat_id**:
+**chat_id**：
 ```
 [Step 4/4] 群聊 Chat ID
 
@@ -218,11 +191,11 @@ Based on Step 4c selection:
   获取方式 : 飞书群聊设置 → 群 ID
 ```
 
-**Validation**: Must match `^oc_[a-zA-Z0-9]+$`
+**校验规则**：必须匹配 `^oc_[a-zA-Z0-9]+$`
 
-### Step 5: Configuration Summary and Confirmation
+### 第五步：配置摘要与确认
 
-Display all values to be saved (App Secret masked):
+显示所有待保存的值（App Secret 脱敏）：
 
 ```
 ===========================================================
@@ -245,17 +218,17 @@ Display all values to be saved (App Secret masked):
 3. 取消
 ```
 
-- **保存并继续**:
-  1. Read existing `~/.claude/settings.local.json` (if exists)
-  2. Deep-merge: preserve all existing keys, only update/add notification keys
-  3. Write merged config back to `~/.claude/settings.local.json`
-  4. Run `chmod 600 ~/.claude/settings.local.json`
-  5. Proceed to **Step 6**
+- **保存并继续**：
+  1. 读取现有 `~/.claude/settings.local.json`（如存在）
+  2. 深度合并：保留所有现有字段，仅更新/添加通知相关字段
+  3. 将合并后的配置写回 `~/.claude/settings.local.json`
+  4. 运行 `chmod 600 ~/.claude/settings.local.json`
+  5. 进入**第六步**
 
-- **重新配置** → Go back to **Step 3**
-- **取消** → Display `配置已取消。` and exit
+- **重新配置** → 返回**第四步**
+- **取消** → 显示 `配置已取消。` 并退出
 
-### Step 6: Test Notification (Optional)
+### 第六步：测试通知（可选）
 
 ```
 配置已保存！
@@ -266,24 +239,24 @@ Display all values to be saved (App Secret masked):
 2. 跳过
 ```
 
-**If user selects "发送测试通知" and notificationType is "feishu"**:
+**如果用户选择"发送测试通知"**：
 
-Run via Bash:
+通过 Bash 运行：
 ```bash
 echo '{"stop_reason":"completed","session_id":"test-setup"}' | python3 <plugin_root>/script/hooks/stop.py
 ```
 
-Where `<plugin_root>` is the plugin directory path (the directory containing this setup.md file's parent).
+其中 `<plugin_root>` 是插件目录路径（即本 SKILL.md 文件的上上级目录）。
 
-**On success** (stderr contains "notification sent"):
+**发送成功**（stderr 包含 "notification sent"）：
 ```
 测试通知发送成功！请检查你的飞书消息。
 如果收到了标题为"会话结束"的卡片消息，说明配置正确。
 ```
 
-Proceed to **Step 7**.
+进入**第七步**。
 
-**On failure**:
+**发送失败**：
 ```
 测试通知发送失败。
 
@@ -298,14 +271,12 @@ Proceed to **Step 7**.
 2. 忽略并继续
 ```
 
-- **重新配置凭证** → Go to **Step 4a**
-- **忽略并继续** → Proceed to **Step 7**
+- **重新配置凭证** → 跳转到**第四步a**
+- **忽略并继续** → 进入**第七步**
 
-**If notificationType is "system"**: Skip test, display `系统通知功能开发中，跳过测试。`, proceed to **Step 7**.
+**如果用户选择"跳过"**：进入**第七步**。
 
-**If user selects "跳过"**: Proceed to **Step 7**.
-
-### Step 7: Completion
+### 第七步：完成
 
 ```
 ===========================================================
@@ -322,7 +293,7 @@ Proceed to **Step 7**.
 ===========================================================
 ```
 
-## Configuration Format
+## 配置格式
 
 ```json
 {
@@ -334,25 +305,25 @@ Proceed to **Step 7**.
 }
 ```
 
-## Validation Rules
+## 校验规则
 
-- **notificationType**: Must be `"feishu"` or `"system"`
-- **feishuAppId**: Must match regex `^cli_[a-zA-Z0-9]{16}$`
-- **feishuAppSecret**: Minimum 32 characters
-- **feishuReceiveId**:
-  - If type is `"open_id"`: Must match regex `^ou_[a-zA-Z0-9]+$`
-  - If type is `"chat_id"`: Must match regex `^oc_[a-zA-Z0-9]+$`
-- **feishuReceiveIdType**: Must be either `"open_id"` or `"chat_id"`
+- **notificationType**：必须为 `"feishu"`
+- **feishuAppId**：必须匹配正则 `^cli_[a-zA-Z0-9]{16}$`
+- **feishuAppSecret**：最少 32 个字符
+- **feishuReceiveId**：
+  - 类型为 `"open_id"` 时：必须匹配正则 `^ou_[a-zA-Z0-9]+$`
+  - 类型为 `"chat_id"` 时：必须匹配正则 `^oc_[a-zA-Z0-9]+$`
+- **feishuReceiveIdType**：必须为 `"open_id"` 或 `"chat_id"`
 
-## Error Handling
+## 错误处理
 
-- If user cancels at any step: display `配置已取消。`
-- If validation fails: show error and allow retry
-- If file write fails: show error with troubleshooting steps
-- Always preserve existing configuration keys when merging
+- 用户在任意步骤取消时：显示 `配置已取消。`
+- 校验失败时：显示错误信息并允许重试
+- 文件写入失败时：显示错误信息及排查步骤
+- 合并配置时始终保留现有字段
 
-## Security Notes
+## 安全须知
 
-- File permissions must be set to 600 (owner read/write only)
-- Never display the full App Secret — always mask middle characters
-- Validate all inputs before saving
+- 文件权限必须设置为 600（仅所有者可读写）
+- 不得显示完整的 App Secret — 始终脱敏中间字符
+- 保存前必须校验所有输入

@@ -1,68 +1,68 @@
 ---
 name: git-push
-description: Push local changes to git remote branch
+description: 推送本地变更到远程分支，自动 commit + push
 ---
 
-# Push - Git Push Command
+# Git Push - 代码推送命令
 
-Push local changes to git remote branch with automatic commit.
+推送本地变更到远程分支，自动完成 commit 和 push。
 
-## Instructions
+## 使用说明
 
-When user runs `/push`, follow these steps:
+当用户运行 `/git-push` 时，按以下步骤执行：
 
-### Step 0: Handle Plan Mode
+### 第零步：处理 Plan 模式
 
-**CRITICAL**: If currently in Plan Mode, automatically exit it using `ExitPlanMode` tool before proceeding. Do NOT ask the user for confirmation - push commands require write access to the repository.
+**关键**：如果当前处于 Plan 模式，自动使用 `ExitPlanMode` 工具退出。无需询问用户确认 — 推送命令需要仓库写入权限。
 
-### Step 1: Check Git Status
+### 第一步：检查 Git 状态
 
-Run `git status` to check current branch and changes.
+运行 `git status` 检查当前分支和变更。
 
-Display the status to user:
+向用户展示状态：
 
 ```
 📋 Git 状态
 ```
 
-Show:
-- Current branch
-- Modified files
-- Untracked files (if any)
+显示：
+- 当前分支
+- 已修改的文件
+- 未跟踪的文件（如有）
 
-### Step 2: Auto-Generate Commit Message
+### 第二步：自动生成提交消息
 
-Automatically analyze git diff to generate an intelligent commit message.
+自动分析 git diff 生成智能提交消息。
 
-**Analysis Process**:
+**分析过程**：
 
-1. Run `git diff --cached --stat` to see changed files
-2. Run `git diff --cached` to see actual changes
-3. Categorize changes based on:
-   - **feat**: New files/functions, feature additions
-   - **fix**: Keywords like fix/bug/修复/solve
-   - **docs**: .md/.txt documentation files
-   - **test**: Test files or test-related changes
-   - **chore**: Config files, dependencies, package updates
-   - **refactor**: Code restructuring without behavior change
+1. 运行 `git diff --cached --stat` 查看变更文件
+2. 运行 `git diff --cached` 查看具体变更
+3. 根据变更内容分类：
+   - **feat**：新文件/新函数、功能新增
+   - **fix**：包含 fix/bug/修复/solve 等关键词
+   - **docs**：.md/.txt 文档文件
+   - **test**：测试文件或测试相关变更
+   - **chore**：配置文件、依赖、包更新
+   - **refactor**：代码重构但不改变行为
 
-4. Generate concise commit message in format: `<type>: <description>`
+4. 生成简洁的提交消息，格式：`<type>: <description>`
 
-**Display to user**:
+**向用户展示**：
 ```
 📝 自动生成的提交消息：
 <generated_commit_message>
 ```
 
-### Step 3: Execute Git Operations
+### 第三步：执行 Git 操作
 
-Automatically execute the following operations:
+自动执行以下操作：
 
-1. **Stage all changes**: `git add .`
-2. **Commit with message**: `git commit -m "<message>"`
-3. **Push to remote**: `git push`
+1. **暂存所有变更**：`git add .`
+2. **提交变更**：`git commit -m "<message>"`
+3. **推送到远程**：`git push`
 
-Show progress:
+显示进度：
 ```
 ⏳ 正在推送...
   1. 暂存文件...
@@ -70,11 +70,11 @@ Show progress:
   3. 推送到远程...
 ```
 
-### Step 4: Display Result
+### 第四步：展示结果
 
-Show success or error message:
+显示成功或失败信息：
 
-**Success**:
+**成功**：
 ```
 ╔════════════════════════════════════════════════════════════╗
 ║  ✅ 推送成功！                                             ║
@@ -85,7 +85,7 @@ Show success or error message:
 🔗 远程: <remote_url>
 ```
 
-**Error**:
+**失败**：
 ```
 ❌ 推送失败
 
@@ -99,19 +99,19 @@ Show success or error message:
 建议：先运行 git pull 拉取远程更新
 ```
 
-## Error Handling
+## 错误处理
 
-- If no changes detected: "⚠️ 没有需要提交的更改"
-- If commit fails: Show git error message, suggest fixing conflicts
-- If push fails: Show error, suggest `git pull --rebase`
-- Always preserve user intent - don't force push without explicit confirmation
+- 没有检测到变更时：显示"⚠️ 没有需要提交的更改"
+- 提交失败时：显示 git 错误信息，建议修复冲突
+- 推送失败时：显示错误信息，建议 `git pull --rebase`
+- 始终尊重用户意图 — 未经明确确认不得 force push
 
-## Commit Message Conventions
+## 提交消息规范
 
-Support conventional commit format:
+支持 conventional commit 格式：
 
-| Type | Description | Example |
-|------|-------------|---------|
+| 类型 | 说明 | 示例 |
+|------|------|------|
 | feat | 新功能 | feat: 添加用户登录 |
 | fix | 修复问题 | fix: 修复登录超时 |
 | docs | 文档更新 | docs: 更新 README |
