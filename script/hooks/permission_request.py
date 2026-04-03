@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from lib import (
     config, logger, FeishuAppBot,
-    get_session_id, filter_sensitive_info
+    get_session_id, get_project_name, filter_sensitive_info
 )
 
 
@@ -46,7 +46,7 @@ def main():
             content = f"项目: {project_dir}\n会话: {session_id}\n{permission_desc}"
 
             success = bot.send_card_message(
-                title="权限请求",
+                title=f"{get_project_name(project_dir)}权限请求",
                 content=content,
                 color="yellow",
             )

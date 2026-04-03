@@ -334,6 +334,22 @@ def format_dict_summary(data: Dict[str, Any], max_length: int = 300) -> str:
         return str(data)[:max_length]
 
 
+def get_project_name(project_dir: str) -> str:
+    """
+    从项目路径中提取最后一级目录名，用于卡片标题前缀.
+
+    Args:
+        project_dir: 项目目录路径
+
+    Returns:
+        str: 格式化的项目名前缀，如 "[anker-gsm-platform-ai] "
+    """
+    if not project_dir or project_dir == "Unknown":
+        return ""
+    name = Path(project_dir).name
+    return f"[{name}] " if name else ""
+
+
 def get_session_id(input_data: Dict[str, Any]) -> str:
     """
     提取会话ID.

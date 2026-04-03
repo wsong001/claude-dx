@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from lib import (
-    config, logger, FeishuAppBot, get_session_id
+    config, logger, FeishuAppBot, get_session_id, get_project_name
 )
 
 
@@ -54,7 +54,7 @@ def main():
                 content += f"\n{message}"
 
             success = bot.send_card_message(
-                title=f"通知 | {notification_type}",
+                title=f"{get_project_name(project_dir)}通知 | {notification_type}",
                 content=content,
                 color=color,
             )
